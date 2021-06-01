@@ -78,7 +78,7 @@ type Category struct {
 }
 
 type Record struct {
-	Name            string    `json:"-"`
+	Name            string    `json:"name"`
 	FullName        string    `json:"full_name"`
 	URL             string    `json:"html_url"`
 	Description     string    `json:"description"`
@@ -87,7 +87,7 @@ type Record struct {
 	StargazersCount int       `json:"stargazers_count"`
 	Archived        bool      `json:"archived"`
 	OpenIssuesCount int       `json:"open_issues_count"`
-	IsGitHubRepo    bool      `json:"-"`
+	IsGitHubRepo    bool      `json:"is_github_repo"`
 }
 
 type Handler struct {

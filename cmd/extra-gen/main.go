@@ -36,13 +36,13 @@ func main() {
 			buf.WriteString(fmt.Sprintf("*%s*\n", c.Desc))
 		}
 
-		buf.WriteString("|Name|Description|Star|Open Issues|PushedAt|CreatedAt|\n")
+		buf.WriteString("|Name|Description|Star|Open Issues|CreatedAt|PushedAt|\n")
 		buf.WriteString(strings.Repeat("|:---:", 6) + "|\n")
 		sort.Slice(c.Records, func(i, j int) bool {
 			return c.Records[i].StargazersCount > c.Records[j].StargazersCount
 		})
 		for _, r := range c.Records {
-			nameLink := fmt.Sprintf("[%s](%s)", r.FullName, r.URL)
+			nameLink := fmt.Sprintf("[%s](%s)", r.Name, r.URL)
 			if r.Archived {
 				nameLink = "**[ARCHIVED]**  " + nameLink
 			}
@@ -53,8 +53,8 @@ func main() {
 					r.Description,
 					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.StargazersCount)) }),
 					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.OpenIssuesCount)) }),
-					getRecordAttr(r.IsGitHubRepo, func() string { return r.PushedAt.Format(time.RFC3339) }),
 					getRecordAttr(r.IsGitHubRepo, func() string { return r.CreatedAt.Format(time.RFC3339) }),
+					getRecordAttr(r.IsGitHubRepo, func() string { return r.PushedAt.Format(time.RFC3339) }),
 				),
 			)
 		}
