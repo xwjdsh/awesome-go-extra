@@ -2,55 +2,71 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	extra "github.com/xwjdsh/awesome-go-extra"
 )
 
-func main() {
-	h := extra.New()
-	h.SetBasicAuth(os.Getenv("EXTRA_GITHUB_USERNAME"), os.Getenv("EXTRA_GITHUB_TOKEN"))
+var (
+	cacheDuration  = flag.Duration("cd", 24*time.Hour, "cache duration")
+	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
+	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
+)
 
-	cas, err := h.GetResult(context.Background())
+func main() {
+	flag.Parse()
+
+	h := extra.New(*cacheDuration, githubUsername, githubToken)
+	r, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)
 	}
-	println(len(cas))
 
 	var buf strings.Builder
 	buf.WriteString("# Awesome Go Extra\n")
-	for _, c := range cas {
-		buf.WriteString(fmt.Sprintf("## %s\n", c.Text))
+	for _, c := range r.Categories {
+		buf.WriteString(fmt.Sprintf("%s %s\n", c.Heading.ToMD(), c.Text))
 		if c.Desc != "" {
-			buf.WriteString(fmt.Sprintf("*%s*", c.Desc))
-		}
-		if len(c.Records) == 0 {
-			continue
+			buf.WriteString(fmt.Sprintf("*%s*\n", c.Desc))
 		}
 
-		buf.WriteString("|Name|Desc|Star|PushedAt|OpenIssues|\n")
-		buf.WriteString(strings.Repeat("|:---:", 5) + "|\n")
+		buf.WriteString("|Name|Description|Star|Open Issues|PushedAt|CreatedAt|\n")
+		buf.WriteString(strings.Repeat("|:---:", 6) + "|\n")
+		sort.Slice(c.Records, func(i, j int) bool {
+			return c.Records[i].StargazersCount > c.Records[j].StargazersCount
+		})
 		for _, r := range c.Records {
-			nameLink := fmt.Sprintf("[%s](%s)", r.Name, r.URL)
+			nameLink := fmt.Sprintf("[%s](%s)", r.FullName, r.URL)
 			if r.Archived {
-				nameLink = "ARCHIVED " + nameLink
-
+				nameLink = "**[ARCHIVED]**  " + nameLink
 			}
 			buf.WriteString(
 				fmt.Sprintf(
-					"|%s|%s|%d|%s|%d|\n",
+					"|%s|%s|%s|%s|%s|%s|\n",
 					nameLink,
 					r.Description,
-					r.StargazersCount,
-					r.PushedAt.Format(time.RFC3339),
-					r.OpenIssuesCount,
+					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.StargazersCount)) }),
+					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.OpenIssuesCount)) }),
+					getRecordAttr(r.IsGitHubRepo, func() string { return r.PushedAt.Format(time.RFC3339) }),
+					getRecordAttr(r.IsGitHubRepo, func() string { return r.CreatedAt.Format(time.RFC3339) }),
 				),
 			)
 		}
 		buf.WriteString("\n")
 	}
-	fmt.Println(buf.String())
+	fmt.Print(buf.String())
+}
+
+func getRecordAttr(isGithubRepo bool, f func() string) string {
+	if !isGithubRepo {
+		return "-"
+	}
+
+	return f()
 }

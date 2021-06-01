@@ -1,21 +1,20 @@
 package extra
 
 import (
+	"context"
 	"io/ioutil"
-	"os"
 	"testing"
 )
 
 func TestParse(t *testing.T) {
 	h := &Handler{
-		GitHubAuthUsername: os.Getenv("TEST_EXTRA_USERNAME"),
-		GitHubAuthToken:    os.Getenv("TEST_EXTRA_PASSWORD"),
+		ignoreGitHubRequest: true,
 	}
-	data, err := ioutil.ReadFile("./testdata/README.md")
+	data, err := ioutil.ReadFile("./awesome-go/README.md")
 	if err != nil {
 		t.Error(err)
 	}
-	categories, err := h.parse(data)
+	categories, err := h.parse(context.Background(), data)
 	if err != nil {
 		t.Error(err)
 	}

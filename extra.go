@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -17,11 +17,61 @@ import (
 )
 
 const (
-	AwesomeGoREADME = "https://raw.githubusercontent.com/avelino/awesome-go/master/README.md"
+	GitHubPrefix = "https://github.com/"
 )
+
+type Heading string
+
+const (
+	H1 Heading = "h1"
+	H2 Heading = "h2"
+	H3 Heading = "h3"
+	H4 Heading = "h4"
+	H5 Heading = "h5"
+)
+
+func (h Heading) ToMD() string {
+	r := ""
+	switch h {
+	case H1:
+		r = "#"
+	case H2:
+		r = "##"
+	case H3:
+		r = "###"
+	case H4:
+		r = "####"
+	case H5:
+		r = "#####"
+	}
+
+	return r
+}
+
+func (h Heading) Sub() Heading {
+	r := H5
+	switch h {
+	case H1:
+		r = H2
+	case H2:
+		r = H3
+	case H3:
+		r = H4
+	case H4:
+		r = H5
+	}
+
+	return r
+}
+
+type Result struct {
+	Time       time.Time   `json:"time"`
+	Categories []*Category `json:"categories"`
+}
 
 type Category struct {
 	ID      string
+	Heading Heading
 	Text    string
 	Desc    string
 	Records []*Record
@@ -37,43 +87,59 @@ type Record struct {
 	StargazersCount int       `json:"stargazers_count"`
 	Archived        bool      `json:"archived"`
 	OpenIssuesCount int       `json:"open_issues_count"`
+	IsGitHubRepo    bool      `json:"-"`
 }
 
 type Handler struct {
-	GitHubAuthUsername string
-	GitHubAuthToken    string
+	ignoreGitHubRequest bool
+	gitHubAuthUsername  string
+	gitHubAuthToken     string
+	cacheDuration       time.Duration
 }
 
-func New() *Handler {
-	return &Handler{}
+func New(cacheDuration time.Duration, gitHubAuthUsername, gitHubAuthToken string) *Handler {
+	return &Handler{
+		cacheDuration:      cacheDuration,
+		gitHubAuthUsername: gitHubAuthUsername,
+		gitHubAuthToken:    gitHubAuthToken,
+	}
 }
 
-func (h *Handler) SetBasicAuth(username, token string) {
-	h.GitHubAuthUsername = username
-	h.GitHubAuthToken = token
-}
+func (h *Handler) GetResult(ctx context.Context) (*Result, error) {
+	result := &Result{}
+	filePath := "./repo-data.json"
+	if h.cacheDuration != 0 {
+		if data, err := ioutil.ReadFile(filePath); err == nil {
+			if err := json.Unmarshal(data, result); err == nil {
+				if result.Time.Add(h.cacheDuration).After(time.Now()) {
+					return result, nil
+				}
+			} else {
+				os.Remove(filePath)
+			}
+		}
+	}
 
-func (h *Handler) GetResult(ctx context.Context) ([]*Category, error) {
-	data, err := h.fetch(ctx)
+	data, err := ioutil.ReadFile("./awesome-go/README.md")
 	if err != nil {
 		return nil, err
 	}
 
-	return h.parse(ctx, data)
-}
-
-func (h *Handler) fetch(ctx context.Context) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", AwesomeGoREADME, nil)
+	categories, err := h.parse(ctx, data)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	result.Time = time.Now()
+	result.Categories = categories
+
+	data, err = json.Marshal(result)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
+
+	ioutil.WriteFile(filePath, data, 0644)
+	return result, nil
 }
 
 func (h *Handler) parse(ctx context.Context, data []byte) ([]*Category, error) {
@@ -96,7 +162,9 @@ func (h *Handler) parse(ctx context.Context, data []byte) ([]*Category, error) {
 
 		desc := ""
 		var listSelection *goquery.Selection
-		next := doc.Find(id).Next()
+		headingSel := doc.Find(id)
+		nodeName := goquery.NodeName(headingSel)
+		next := headingSel.Next()
 		switch goquery.NodeName(next) {
 		case "p":
 			desc = next.Text()
@@ -108,38 +176,36 @@ func (h *Handler) parse(ctx context.Context, data []byte) ([]*Category, error) {
 			listSelection = next
 		}
 
-		category := &Category{
-			ID:   id,
-			Text: text,
-			Desc: desc,
-		}
 		if listSelection != nil {
+			category := &Category{
+				ID:      id,
+				Text:    text,
+				Heading: Heading(nodeName),
+				Desc:    desc,
+			}
+			categories = append(categories, category)
 			for i := range listSelection.Children().Nodes {
 				s := listSelection.Children().Eq(i)
-
-				a := s.Find("a")
-				addr := a.AttrOr("href", "")
-				name := a.Text()
-
-				a.Remove()
-				desc := strings.TrimPrefix(s.Text(), " - ")
-
-				record := &Record{
-					Name:        name,
-					URL:         addr,
-					Description: desc,
-				}
-				if prefix := "https://github.com/"; strings.HasPrefix(addr, prefix) {
-					fullName := strings.TrimPrefix(addr, prefix)
-					if err := h.getGitHubRepo(ctx, fullName, record); err != nil {
-						log.Println(err.Error())
+				if sul := s.Find("ul"); sul.Length() > 0 {
+					sul.Remove()
+					listCategory := &Category{
+						Text:    s.Text(),
+						Heading: category.Heading.Sub(),
 					}
+					categories = append(categories, listCategory)
+					for i := range sul.Children().Nodes {
+						ss := sul.Children().Eq(i)
+						if err := h.parseAndAddRecord(ctx, ss, listCategory); err != nil {
+							return nil, err
+						}
+					}
+					continue
 				}
-				category.Records = append(category.Records, record)
+				if err := h.parseAndAddRecord(ctx, s, category); err != nil {
+					return nil, err
+				}
 			}
 		}
-
-		categories = append(categories, category)
 	}
 
 	return categories, nil
@@ -150,8 +216,8 @@ func (h *Handler) getGitHubRepo(ctx context.Context, fullName string, r *Record)
 	if err != nil {
 		return err
 	}
-	if h.GitHubAuthToken != "" {
-		req.SetBasicAuth(h.GitHubAuthUsername, h.GitHubAuthToken)
+	if h.gitHubAuthToken != "" {
+		req.SetBasicAuth(h.gitHubAuthUsername, h.gitHubAuthToken)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -169,4 +235,33 @@ func (h *Handler) getGitHubRepo(ctx context.Context, fullName string, r *Record)
 		return err
 	}
 	return json.Unmarshal(data, r)
+}
+
+func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, category *Category) error {
+	a := s.Find("a").First()
+	addr := a.AttrOr("href", "")
+	name := a.Text()
+
+	a.Remove()
+	desc := strings.TrimPrefix(s.Text(), " - ")
+
+	record := &Record{
+		Name:         name,
+		FullName:     name,
+		URL:          addr,
+		Description:  desc,
+		IsGitHubRepo: strings.HasPrefix(addr, GitHubPrefix),
+	}
+	if record.IsGitHubRepo && !h.ignoreGitHubRequest {
+		fullName := strings.TrimPrefix(addr, GitHubPrefix)
+		eles := strings.Split(fullName, "/")
+		if len(eles) >= 2 {
+			fullName = strings.Join(eles[:2], "/")
+			if err := h.getGitHubRepo(ctx, fullName, record); err != nil {
+				return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
+			}
+		}
+	}
+	category.Records = append(category.Records, record)
+	return nil
 }
