@@ -16,10 +16,6 @@ import (
 	"github.com/gomarkdown/markdown/html"
 )
 
-const (
-	GitHubPrefix = "https://github.com/"
-)
-
 type Heading string
 
 const (
@@ -94,12 +90,13 @@ type Handler struct {
 	ignoreGitHubRequest bool
 	gitHubAuthUsername  string
 	gitHubAuthToken     string
-	cacheDuration       time.Duration
+	noCache             bool
+	mapping             map[string]string
 }
 
-func New(cacheDuration time.Duration, gitHubAuthUsername, gitHubAuthToken string) *Handler {
+func New(noCache bool, gitHubAuthUsername, gitHubAuthToken string) *Handler {
 	return &Handler{
-		cacheDuration:      cacheDuration,
+		noCache:            noCache,
 		gitHubAuthUsername: gitHubAuthUsername,
 		gitHubAuthToken:    gitHubAuthToken,
 	}
@@ -108,12 +105,10 @@ func New(cacheDuration time.Duration, gitHubAuthUsername, gitHubAuthToken string
 func (h *Handler) GetResult(ctx context.Context) (*Result, error) {
 	result := &Result{}
 	filePath := "./repo-data.json"
-	if h.cacheDuration != 0 {
+	if !h.noCache {
 		if data, err := ioutil.ReadFile(filePath); err == nil {
 			if err := json.Unmarshal(data, result); err == nil {
-				if result.Time.Add(h.cacheDuration).After(time.Now()) {
-					return result, nil
-				}
+				return result, nil
 			} else {
 				os.Remove(filePath)
 			}
@@ -122,6 +117,15 @@ func (h *Handler) GetResult(ctx context.Context) (*Result, error) {
 
 	data, err := ioutil.ReadFile("./awesome-go/README.md")
 	if err != nil {
+		return nil, err
+	}
+
+	mappingData, err := ioutil.ReadFile("./mapping.json")
+	if err != nil {
+		return nil, err
+	}
+	h.mapping = map[string]string{}
+	if err := json.Unmarshal(mappingData, &h.mapping); err != nil {
 		return nil, err
 	}
 
@@ -242,26 +246,43 @@ func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, c
 	addr := a.AttrOr("href", "")
 	name := a.Text()
 
+	if h.mapping != nil {
+		if newAddr, ok := h.mapping[addr]; ok {
+			addr = newAddr
+		}
+	}
+
 	a.Remove()
 	desc := strings.TrimPrefix(s.Text(), " - ")
 
+	fullName, isGitHubRepo := getGitHubRepoFullName(addr)
 	record := &Record{
 		Name:         name,
-		FullName:     name,
+		FullName:     fullName,
 		URL:          addr,
 		Description:  desc,
-		IsGitHubRepo: strings.HasPrefix(addr, GitHubPrefix),
+		IsGitHubRepo: isGitHubRepo,
 	}
-	if record.IsGitHubRepo && !h.ignoreGitHubRequest {
-		fullName := strings.TrimPrefix(addr, GitHubPrefix)
-		eles := strings.Split(fullName, "/")
-		if len(eles) >= 2 {
-			fullName = strings.Join(eles[:2], "/")
-			if err := h.getGitHubRepo(ctx, fullName, record); err != nil {
-				return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
-			}
+	if isGitHubRepo && !h.ignoreGitHubRequest {
+		if err := h.getGitHubRepo(ctx, fullName, record); err != nil {
+			return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
 		}
 	}
 	category.Records = append(category.Records, record)
 	return nil
+}
+
+func getGitHubRepoFullName(addr string) (string, bool) {
+	fullName := strings.TrimPrefix(addr, "https://github.com/")
+	fullName = strings.TrimPrefix(fullName, "http://github.com/")
+	if addr == fullName {
+		return addr, false
+	}
+
+	eles := strings.Split(fullName, "/")
+	if len(eles) < 2 {
+		return addr, false
+	}
+
+	return strings.Join(eles[:2], "/"), true
 }

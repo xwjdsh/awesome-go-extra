@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	cacheDuration  = flag.Duration("cd", 24*time.Hour, "cache duration")
+	noCache        = flag.Bool("no-cache", false, "refresh data, do not use cache")
 	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
 	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
 )
@@ -22,7 +22,7 @@ var (
 func main() {
 	flag.Parse()
 
-	h := extra.New(*cacheDuration, githubUsername, githubToken)
+	h := extra.New(*noCache, githubUsername, githubToken)
 	r, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)
@@ -34,6 +34,10 @@ func main() {
 		buf.WriteString(fmt.Sprintf("%s %s\n", c.Heading.ToMD(), c.Text))
 		if c.Desc != "" {
 			buf.WriteString(fmt.Sprintf("*%s*\n", c.Desc))
+		}
+
+		if len(c.Records) == 0 {
+			continue
 		}
 
 		buf.WriteString("|Name|Description|Star|Open Issues|CreatedAt|PushedAt|\n")
@@ -50,7 +54,7 @@ func main() {
 				fmt.Sprintf(
 					"|%s|%s|%s|%s|%s|%s|\n",
 					nameLink,
-					r.Description,
+					strings.ReplaceAll(r.Description, "|", "`|`"),
 					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.StargazersCount)) }),
 					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.OpenIssuesCount)) }),
 					getRecordAttr(r.IsGitHubRepo, func() string { return r.CreatedAt.Format(time.RFC3339) }),
