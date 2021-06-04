@@ -7,10 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
+// Handler the db Handler.
 type Handler struct {
 	db *gorm.DB
 }
 
+// Category is the sort of repos
 type Category struct {
 	ID           int64   `gorm:"primarykey"`
 	Text         string  `gorm:"column:text"`
@@ -20,10 +22,12 @@ type Category struct {
 	Records      []*Record
 }
 
+// TableName ...
 func (Category) TableName() string {
 	return "category"
 }
 
+// Record record on awesome-go
 type Record struct {
 	ID              int64     `gorm:"primarykey"`
 	Name            string    `gorm:"column:name"`
@@ -40,20 +44,28 @@ type Record struct {
 	CreatedAt       time.Time
 }
 
+// TableName ...
 func (Record) TableName() string {
 	return "record"
 }
 
+// Heading ...
 type Heading string
 
 const (
+	// H1 ...
 	H1 Heading = "h1"
+	// H2 ...
 	H2 Heading = "h2"
+	// H3 ...
 	H3 Heading = "h3"
+	// H4 ...
 	H4 Heading = "h4"
+	// H5 ...
 	H5 Heading = "h5"
 )
 
+// ToMD convert to markdown format
 func (h Heading) ToMD() string {
 	r := ""
 	switch h {
@@ -72,6 +84,7 @@ func (h Heading) ToMD() string {
 	return r
 }
 
+// Sub returns the next level of heading
 func (h Heading) Sub() Heading {
 	r := H5
 	switch h {
@@ -88,6 +101,7 @@ func (h Heading) Sub() Heading {
 	return r
 }
 
+// Init returns a new Handler
 func Init(dbPath string) (*Handler, error) {
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
@@ -103,11 +117,13 @@ func Init(dbPath string) (*Handler, error) {
 	}, nil
 }
 
+// GetCategories returns categories data.
 func (h *Handler) GetCategories() ([]*Category, error) {
 	cas := []*Category{}
 	return cas, h.db.Preload("Records").Find(&cas).Error
 }
 
+// SyncCategories recreate categories and records.
 func (h *Handler) SyncCategories(cas []*Category) error {
 	return h.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("1 = 1").Delete(&Category{}).Error; err != nil {

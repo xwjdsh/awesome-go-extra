@@ -16,6 +16,7 @@ import (
 	"github.com/xwjdsh/awesome-go-extra/models"
 )
 
+// Handler extra Handler
 type Handler struct {
 	modelsHandler       *models.Handler
 	ignoreGitHubRequest bool
@@ -27,6 +28,7 @@ type Handler struct {
 	awesomeGoReadmePath string
 }
 
+// New returns a new Handler
 func New(cachePath, gitHubAuthUsername, gitHubAuthToken string, modelsHandler *models.Handler) *Handler {
 	return &Handler{
 		gitHubAuthUsername:  gitHubAuthUsername,
@@ -38,6 +40,7 @@ func New(cachePath, gitHubAuthUsername, gitHubAuthToken string, modelsHandler *m
 	}
 }
 
+// GetResult returns categories and records data
 func (h *Handler) GetResult(ctx context.Context) ([]*models.Category, error) {
 	if h.cachePath != "" {
 		cas, err := h.modelsHandler.GetCategories()
@@ -210,10 +213,10 @@ func getGitHubRepoFullName(addr string) (string, bool) {
 		return addr, false
 	}
 
-	eles := strings.Split(fullName, "/")
-	if len(eles) < 2 {
+	elements := strings.Split(fullName, "/")
+	if len(elements) < 2 {
 		return addr, false
 	}
 
-	return strings.Join(eles[:2], "/"), true
+	return strings.Join(elements[:2], "/"), true
 }
