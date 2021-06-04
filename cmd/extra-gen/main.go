@@ -11,10 +11,11 @@ import (
 	"time"
 
 	extra "github.com/xwjdsh/awesome-go-extra"
+	"github.com/xwjdsh/awesome-go-extra/models"
 )
 
 var (
-	noCache        = flag.Bool("no-cache", false, "refresh data, do not use cache")
+	cacheFilePath  = flag.String("cache", "repos.db", "cache file path")
 	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
 	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
 )
@@ -22,16 +23,21 @@ var (
 func main() {
 	flag.Parse()
 
-	h := extra.New(*noCache, githubUsername, githubToken)
-	r, err := h.GetResult(context.Background())
+	modelsHandler, err := models.Init(*cacheFilePath)
+	if err != nil {
+		panic(err)
+	}
+
+	h := extra.New(*cacheFilePath, githubUsername, githubToken, modelsHandler)
+	cas, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
 	var buf strings.Builder
 	buf.WriteString("# Awesome Go Extra\n")
-	for _, c := range r.Categories {
-		buf.WriteString(fmt.Sprintf("%s %s\n", c.Heading.ToMD(), c.Text))
+	for _, c := range cas {
+		buf.WriteString(fmt.Sprintf("%s %s\n", c.HeadingLevel.ToMD(), c.Text))
 		if c.Desc != "" {
 			buf.WriteString(fmt.Sprintf("*%s*\n", c.Desc))
 		}
