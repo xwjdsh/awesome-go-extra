@@ -1,0 +1,13 @@
+# Awesome Go Extra
+
+{{- range .}}
+{{headingMD .HeadingLevel}} {{.Text}}
+{{if .Desc}}*{{.Desc}}*{{end}}
+	{{if .Records}}
+|Name|Description|Star|Open Issues|CreatedAt|PushedAt|
+|:---:|:---:|:---:|:---:|:---:|:---:|
+	{{- range sort .Records "star"}}
+|{{if .Archived}}**[ARCHIVED]**  {{end}}[{{.Name}}]({{.URL}})|{{replace .Description "|" " " -1}}|{{recordAttr .IsGitHubRepo .StargazersCount}}|{{recordAttr .IsGitHubRepo .OpenIssuesCount}}|{{recordAttr .IsGitHubRepo .CreatedAt}}|{{recordAttr .IsGitHubRepo .PushedAt}}|
+	{{- end}}
+{{end}}
+{{end -}}

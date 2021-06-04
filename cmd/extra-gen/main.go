@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"html/template"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 
 var (
 	cacheFilePath  = flag.String("cache", "repos.db", "cache file path")
+	tmplFilePath   = flag.String("tmpl", "extra-md.tmpl", "template file path")
 	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
 	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
 )
@@ -34,49 +36,46 @@ func main() {
 		panic(err)
 	}
 
-	var buf strings.Builder
-	buf.WriteString("# Awesome Go Extra\n")
-	for _, c := range cas {
-		buf.WriteString(fmt.Sprintf("%s %s\n", c.HeadingLevel.ToMD(), c.Text))
-		if c.Desc != "" {
-			buf.WriteString(fmt.Sprintf("*%s*\n", c.Desc))
-		}
-
-		if len(c.Records) == 0 {
-			continue
-		}
-
-		buf.WriteString("|Name|Description|Star|Open Issues|CreatedAt|PushedAt|\n")
-		buf.WriteString(strings.Repeat("|:---:", 6) + "|\n")
-		sort.Slice(c.Records, func(i, j int) bool {
-			return c.Records[i].StargazersCount > c.Records[j].StargazersCount
-		})
-		for _, r := range c.Records {
-			nameLink := fmt.Sprintf("[%s](%s)", r.Name, r.URL)
-			if r.Archived {
-				nameLink = "**[ARCHIVED]**  " + nameLink
+	t, err := template.New(filepath.Base(*tmplFilePath)).Funcs(template.FuncMap{
+		"headingMD": func(heading models.Heading) string {
+			return heading.ToMD()
+		},
+		"recordAttr": func(isGithubRepo bool, attr interface{}) string {
+			if !isGithubRepo {
+				return "-"
 			}
-			buf.WriteString(
-				fmt.Sprintf(
-					"|%s|%s|%s|%s|%s|%s|\n",
-					nameLink,
-					strings.ReplaceAll(r.Description, "|", "`|`"),
-					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.StargazersCount)) }),
-					getRecordAttr(r.IsGitHubRepo, func() string { return strconv.Itoa((r.OpenIssuesCount)) }),
-					getRecordAttr(r.IsGitHubRepo, func() string { return r.CreatedAt.Format(time.RFC3339) }),
-					getRecordAttr(r.IsGitHubRepo, func() string { return r.PushedAt.Format(time.RFC3339) }),
-				),
-			)
-		}
-		buf.WriteString("\n")
+			switch v := attr.(type) {
+			case string:
+				return v
+			case int:
+				return strconv.Itoa(v)
+			case time.Time:
+				return v.Format(time.RFC3339)
+			}
+			return ""
+		},
+		"sort": func(records []*models.Record, orderBy string) []*models.Record {
+			sort.Slice(records, func(i, j int) bool {
+				switch orderBy {
+				case "star":
+					return records[i].StargazersCount > records[j].StargazersCount
+				case "open_issues":
+					return records[i].OpenIssuesCount < records[j].OpenIssuesCount
+				case "pushed_at":
+					return records[i].PushedAt.After(records[j].PushedAt)
+				default:
+					return records[i].StargazersCount > records[j].StargazersCount
+				}
+			})
+			return records
+		},
+		"replace": strings.Replace,
+	}).ParseFiles(*tmplFilePath)
+	if err != nil {
+		panic(err)
 	}
-	fmt.Print(buf.String())
-}
 
-func getRecordAttr(isGithubRepo bool, f func() string) string {
-	if !isGithubRepo {
-		return "-"
+	if err := t.Execute(os.Stdout, cas); err != nil {
+		panic(err)
 	}
-
-	return f()
 }
