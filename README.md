@@ -1,4 +1,5 @@
 # Awesome Go Extra
+***All data are from [awesome-go](https://github.com/avelino/awesome-go) and [GitHub API](https://docs.github.com/en/rest/reference/repos#get-a-repository).***
 ## Audio and Music
 *Libraries for manipulating audio.*
 	
@@ -1125,8 +1126,7 @@
 |[excelize](https://github.com/360EntSecGroup-Skylar/excelize)|Golang library for reading and writing Microsoft Excel™ (XLSX) files.|8796|78|2021-06-04T19:05:10&#43;08:00|2021-05-31T12:13:32Z|
 |[xlsx](https://github.com/tealeg/xlsx)|Go (golang) library for reading and writing XLSX files. |4967|36|2021-06-04T19:05:10&#43;08:00|2021-06-02T10:14:21Z|
 |[xlsx](https://github.com/plandem/xlsx)|Fast and reliable way to work with Microsoft Excel™ [xlsx] files in Golang|135|11|2021-06-04T19:05:10&#43;08:00|2020-11-04T15:00:26Z|
-|[go-excel](https://github.com/szyhf/go-excel)|A simple and light excel file reader to read a standard excel as a table faster 
- 一个轻量级的Excel数据读取库，用一种更`关系数据库`的方式解析Excel。|118|1|2021-06-04T19:05:10&#43;08:00|2021-05-26T08:54:12Z|
+|[go-excel](https://github.com/szyhf/go-excel)|A simple and light excel file reader to read a standard excel as a table faster   一个轻量级的Excel数据读取库，用一种更`关系数据库`的方式解析Excel。|118|1|2021-06-04T19:05:10&#43;08:00|2021-05-26T08:54:12Z|
 |[goxlsxwriter](https://github.com/fterrag/goxlsxwriter)|Golang bindings for libxlsxwriter for writing XLSX files|15|1|2021-06-04T19:05:10&#43;08:00|2018-07-31T21:24:17Z|
 
 
