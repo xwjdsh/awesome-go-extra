@@ -10,17 +10,20 @@ import (
 	"github.com/xwjdsh/awesome-go-extra/models"
 )
 
+// GitHubAPI github api interface
 type GitHubAPI interface {
 	UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.Record) error
 }
 
 var _ GitHubAPI = new(GitHubClient)
 
+// GitHubClient implements GitHubAPI
 type GitHubClient struct {
 	Username string
 	Token    string
 }
 
+// NewGitHubClient returns a new GitHubClient
 func NewGitHubClient(username, token string) *GitHubClient {
 	return &GitHubClient{
 		Username: username,
@@ -28,6 +31,7 @@ func NewGitHubClient(username, token string) *GitHubClient {
 	}
 }
 
+// UnmarshalGitHubRepo unmarshal github get repo api result to models.Record
 func (c *GitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.Record) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://api.github.com/repos/%s", fullName), nil)
 	if err != nil {

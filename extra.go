@@ -25,6 +25,7 @@ type Handler struct {
 	awesomeGoReadmePath string
 }
 
+// ModelsHandler is the models operation interface
 type ModelsHandler interface {
 	SyncCategories(cas []*models.Category) error
 	GetCategories() ([]*models.Category, error)
