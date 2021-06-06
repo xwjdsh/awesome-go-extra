@@ -30,7 +30,8 @@ func main() {
 		panic(err)
 	}
 
-	h := extra.New(*cacheFilePath, githubUsername, githubToken, modelsHandler)
+	githubClient := extra.NewGitHubClient(githubUsername, githubToken)
+	h := extra.New(*cacheFilePath, githubClient, modelsHandler)
 	cas, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)

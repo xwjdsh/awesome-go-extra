@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -18,26 +17,30 @@ import (
 
 // Handler extra Handler
 type Handler struct {
-	modelsHandler       *models.Handler
-	ignoreGitHubRequest bool
-	gitHubAuthUsername  string
-	gitHubAuthToken     string
+	modelsHandler       ModelsHandler
+	githubAPI           GitHubAPI
 	mapping             map[string]string
 	cachePath           string
 	mappingPth          string
 	awesomeGoReadmePath string
 }
 
+type ModelsHandler interface {
+	SyncCategories(cas []*models.Category) error
+	GetCategories() ([]*models.Category, error)
+}
+
 // New returns a new Handler
-func New(cachePath, gitHubAuthUsername, gitHubAuthToken string, modelsHandler *models.Handler) *Handler {
-	return &Handler{
-		gitHubAuthUsername:  gitHubAuthUsername,
-		gitHubAuthToken:     gitHubAuthToken,
+func New(cachePath string, githubClient *GitHubClient, modelsHandler *models.Handler) *Handler {
+	h := &Handler{
 		cachePath:           cachePath,
 		mappingPth:          "./mapping.json",
 		awesomeGoReadmePath: "./awesome-go/README.md",
+		githubAPI:           githubClient,
 		modelsHandler:       modelsHandler,
 	}
+
+	return h
 }
 
 // GetResult returns categories and records data
@@ -149,32 +152,6 @@ func (h *Handler) parse(ctx context.Context, data []byte) ([]*models.Category, e
 	return categories, nil
 }
 
-func (h *Handler) getGitHubRepo(ctx context.Context, fullName string, r *models.Record) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://api.github.com/repos/%s", fullName), nil)
-	if err != nil {
-		return err
-	}
-	if h.gitHubAuthToken != "" {
-		req.SetBasicAuth(h.gitHubAuthUsername, h.gitHubAuthToken)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, r)
-}
-
 func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, category *models.Category) error {
 	a := s.Find("a").First()
 	addr := a.AttrOr("href", "")
@@ -197,8 +174,8 @@ func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, c
 		Description:  desc,
 		IsGitHubRepo: isGitHubRepo,
 	}
-	if isGitHubRepo && !h.ignoreGitHubRequest {
-		if err := h.getGitHubRepo(ctx, fullName, record); err != nil {
+	if isGitHubRepo {
+		if err := h.githubAPI.UnmarshalGitHubRepo(ctx, fullName, record); err != nil {
 			return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
 		}
 	}
