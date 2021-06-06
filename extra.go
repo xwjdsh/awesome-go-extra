@@ -31,11 +31,11 @@ type ModelsHandler interface {
 }
 
 // New returns a new Handler
-func New(cachePath string, githubClient *GitHubClient, modelsHandler *models.Handler) *Handler {
+func New(cachePath, mappingPth, awesomeGoReadmePath string, githubClient GitHubAPI, modelsHandler ModelsHandler) *Handler {
 	h := &Handler{
 		cachePath:           cachePath,
-		mappingPth:          "./mapping.json",
-		awesomeGoReadmePath: "./awesome-go/README.md",
+		mappingPth:          mappingPth,
+		awesomeGoReadmePath: awesomeGoReadmePath,
 		githubAPI:           githubClient,
 		modelsHandler:       modelsHandler,
 	}

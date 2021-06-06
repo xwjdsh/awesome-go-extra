@@ -24,14 +24,8 @@ func (c *MockGitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName str
 }
 
 func TestGetResult(t *testing.T) {
-	h := &Handler{
-		mappingPth:          "./testdata/mapping.json",
-		awesomeGoReadmePath: "./testdata/README.md",
-		cachePath:           "./testdata/testrepos.db",
-		modelsHandler:       new(MockModelsHandler),
-		githubAPI:           new(MockGitHubClient),
-	}
-
+	h := New("./testdata/testrepos.db", "./testdata/mapping.json", "./testdata/README.md",
+		new(MockGitHubClient), new(MockModelsHandler))
 	categories, err := h.GetResult(context.Background())
 	if err != nil {
 		t.Error(err)

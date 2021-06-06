@@ -31,7 +31,7 @@ func main() {
 	}
 
 	githubClient := extra.NewGitHubClient(githubUsername, githubToken)
-	h := extra.New(*cacheFilePath, githubClient, modelsHandler)
+	h := extra.New(*cacheFilePath, "./mapping.json", "./awesome-go/README.md", githubClient, modelsHandler)
 	cas, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)
