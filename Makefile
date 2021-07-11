@@ -3,4 +3,4 @@ all: build
 
 .PHONY: build
 build:
-	go run ./cmd/extra-gen > README.md
+	go run ./cmd/extra-gen --refresh-cache > README.md

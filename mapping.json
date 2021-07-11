@@ -36,5 +36,6 @@
   "http://gohugo.io/": "https://github.com/gohugoio/hugo",
   "https://tsuru.io/": "https://github.com/tsuru/tsuru",
   "https://limetext.github.io": "https://github.com/limetext/lime",
-  "http://www.docker.com/": "https://github.com/moby/moby"
+  "http://www.docker.com/": "https://github.com/moby/moby",
+  "https://github.com/prologic/bitcask": "https://git.mills.io/prologic/bitcask"
 }

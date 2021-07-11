@@ -23,6 +23,7 @@ type Handler struct {
 	cachePath           string
 	mappingPth          string
 	awesomeGoReadmePath string
+	refreshCache        bool
 }
 
 // ModelsHandler is the models operation interface
@@ -32,9 +33,10 @@ type ModelsHandler interface {
 }
 
 // New returns a new Handler
-func New(cachePath, mappingPth, awesomeGoReadmePath string, githubClient GitHubAPI, modelsHandler ModelsHandler) *Handler {
+func New(refreshCache bool, cachePath, mappingPth, awesomeGoReadmePath string, githubClient GitHubAPI, modelsHandler ModelsHandler) *Handler {
 	h := &Handler{
 		cachePath:           cachePath,
+		refreshCache:        refreshCache,
 		mappingPth:          mappingPth,
 		awesomeGoReadmePath: awesomeGoReadmePath,
 		githubAPI:           githubClient,
@@ -46,7 +48,7 @@ func New(cachePath, mappingPth, awesomeGoReadmePath string, githubClient GitHubA
 
 // GetResult returns categories and records data
 func (h *Handler) GetResult(ctx context.Context) ([]*models.Category, error) {
-	if h.cachePath != "" {
+	if h.cachePath != "" && !h.refreshCache {
 		cas, err := h.modelsHandler.GetCategories()
 		if err != nil {
 			return nil, err

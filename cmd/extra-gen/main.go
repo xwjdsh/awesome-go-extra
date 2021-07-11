@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	cacheFilePath  = flag.String("cache", "repos.db", "cache file path")
+	refreshCache   = flag.Bool("refresh-cache", false, "refresh cache")
 	tmplFilePath   = flag.String("tmpl", "extra-md.tmpl", "template file path")
 	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
 	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
@@ -25,13 +25,14 @@ var (
 func main() {
 	flag.Parse()
 
-	modelsHandler, err := models.Init(*cacheFilePath)
+	cacheFilePath := "./repos.db"
+	modelsHandler, err := models.Init(cacheFilePath)
 	if err != nil {
 		panic(err)
 	}
 
 	githubClient := extra.NewGitHubClient(githubUsername, githubToken)
-	h := extra.New(*cacheFilePath, "./mapping.json", "./awesome-go/README.md", githubClient, modelsHandler)
+	h := extra.New(*refreshCache, cacheFilePath, "./mapping.json", "./awesome-go/README.md", githubClient, modelsHandler)
 	cas, err := h.GetResult(context.Background())
 	if err != nil {
 		panic(err)
