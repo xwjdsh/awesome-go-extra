@@ -9,7 +9,7 @@ import (
 
 func TestUnmarshalGitHubRepo(t *testing.T) {
 	client := NewGitHubClient("", "")
-	r := new(models.Record)
+	r := new(models.GitHubRepo)
 	err := client.UnmarshalGitHubRepo(context.Background(), "xwjdsh/awesome-go-extra", r)
 	if err != nil {
 		t.Error(err)
