@@ -7,7 +7,7 @@
 	{{if .Records}}
 |Name|Desc|Star|Fork|Issue|Created|Pushed|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-	{{- range sort .Records "star"}}
+	{{- range sort .Records}}
 		{{- $description := ifelse .IsGitHubRepo .Repo.Description .Description}}
 {{if .Repo.Archived}}**[ARCHIVED]**  {{end}}[{{ifelse .IsGitHubRepo .Repo.Name .Name}}]({{.URL}})|{{replace $description "|" " " -1}}|{{recordAttr .IsGitHubRepo .Repo.StargazersCount}}|{{recordAttr .IsGitHubRepo .Repo.ForksCount}}|{{recordAttr .IsGitHubRepo .Repo.OpenIssuesCount}}|{{recordAttr .IsGitHubRepo .Repo.CreatedAt}}|{{recordAttr .IsGitHubRepo .Repo.PushedAt}}|
 	{{- end}}

@@ -23,9 +23,9 @@ jobs:
         env:
           EXTRA_GITHUB_USERNAME: xwjdsh 
           EXTRA_GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          REFRESH: 1
         run: |
-          RESULT=$(go run ./cmd/extra-gen --refresh-cache)
-          echo $RESULT > README.md
+          make
       - name: Commit & Push
         run: |
           CHANGES=$(git status --porcelain)
