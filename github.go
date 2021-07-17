@@ -12,7 +12,7 @@ import (
 
 // GitHubAPI github api interface
 type GitHubAPI interface {
-	UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.Record) error
+	UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.GitHubRepo) error
 }
 
 var _ GitHubAPI = new(GitHubClient)
@@ -32,7 +32,7 @@ func NewGitHubClient(username, token string) *GitHubClient {
 }
 
 // UnmarshalGitHubRepo unmarshal github get repo api result to models.Record
-func (c *GitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.Record) error {
+func (c *GitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.GitHubRepo) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://api.github.com/repos/%s", fullName), nil)
 	if err != nil {
 		return err

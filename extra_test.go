@@ -19,12 +19,12 @@ func (h *MockModelsHandler) GetCategories() ([]*models.Category, error) {
 
 type MockGitHubClient struct{}
 
-func (c *MockGitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.Record) error {
+func (c *MockGitHubClient) UnmarshalGitHubRepo(ctx context.Context, fullName string, r *models.GitHubRepo) error {
 	return nil
 }
 
 func TestGetResult(t *testing.T) {
-	h := New("./testdata/testrepos.db", "./testdata/mapping.json", "./testdata/README.md",
+	h := New(true, "./testdata/testrepos.db", "./testdata/mapping.json", "./testdata/README.md",
 		new(MockGitHubClient), new(MockModelsHandler))
 	categories, err := h.GetResult(context.Background())
 	if err != nil {

@@ -17,7 +17,8 @@ import (
 
 var (
 	refreshCache   = flag.Bool("refresh-cache", false, "refresh cache")
-	tmplFilePath   = flag.String("tmpl", "extra-md.tmpl", "template file path")
+	tmplFilePath   = flag.String("tmpl", "", "template file path")
+	outputFilePath = flag.String("w", "", "output file path")
 	githubUsername = os.Getenv("EXTRA_GITHUB_USERNAME")
 	githubToken    = os.Getenv("EXTRA_GITHUB_TOKEN")
 )
@@ -42,6 +43,12 @@ func main() {
 		"headingMD": func(heading models.Heading) string {
 			return heading.ToMD()
 		},
+		"ifelse": func(b bool, i, j interface{}) interface{} {
+			if b {
+				return i
+			}
+			return j
+		},
 		"recordAttr": func(isGithubRepo bool, attr interface{}) string {
 			if !isGithubRepo {
 				return "-"
@@ -56,18 +63,15 @@ func main() {
 			}
 			return ""
 		},
-		"sort": func(records []*models.Record, orderBy string) []*models.Record {
+		"sort": func(records []*models.Record) []*models.Record {
 			sort.Slice(records, func(i, j int) bool {
-				switch orderBy {
-				case "star":
-					return records[i].StargazersCount > records[j].StargazersCount
-				case "open_issues":
-					return records[i].OpenIssuesCount < records[j].OpenIssuesCount
-				case "pushed_at":
-					return records[i].PushedAt.After(records[j].PushedAt)
-				default:
-					return records[i].StargazersCount > records[j].StargazersCount
+				if records[i].Repo.StargazersCount == records[j].Repo.StargazersCount {
+					if records[i].Repo.ForksCount == records[j].Repo.ForksCount {
+						return records[i].Repo.OpenIssuesCount < records[j].Repo.OpenIssuesCount
+					}
+					return records[i].Repo.ForksCount > records[j].Repo.ForksCount
 				}
+				return records[i].Repo.StargazersCount > records[j].Repo.StargazersCount
 			})
 			return records
 		},
@@ -77,7 +81,17 @@ func main() {
 		panic(err)
 	}
 
-	if err := t.Execute(os.Stdout, cas); err != nil {
+	writer := os.Stdout
+	if *outputFilePath != "" {
+		f, err := os.OpenFile(*outputFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		writer = f
+	}
+
+	if err := t.Execute(writer, cas); err != nil {
 		panic(err)
 	}
 }
