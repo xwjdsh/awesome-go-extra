@@ -42,6 +42,12 @@ func main() {
 		"headingMD": func(heading models.Heading) string {
 			return heading.ToMD()
 		},
+		"ifelse": func(b bool, i, j interface{}) interface{} {
+			if b {
+				return i
+			}
+			return j
+		},
 		"recordAttr": func(isGithubRepo bool, attr interface{}) string {
 			if !isGithubRepo {
 				return "-"
@@ -60,13 +66,13 @@ func main() {
 			sort.Slice(records, func(i, j int) bool {
 				switch orderBy {
 				case "star":
-					return records[i].StargazersCount > records[j].StargazersCount
+					return records[i].Repo.StargazersCount > records[j].Repo.StargazersCount
 				case "open_issues":
-					return records[i].OpenIssuesCount < records[j].OpenIssuesCount
+					return records[i].Repo.OpenIssuesCount < records[j].Repo.OpenIssuesCount
 				case "pushed_at":
-					return records[i].PushedAt.After(records[j].PushedAt)
+					return records[i].Repo.PushedAt.After(records[j].Repo.PushedAt)
 				default:
-					return records[i].StargazersCount > records[j].StargazersCount
+					return records[i].Repo.StargazersCount > records[j].Repo.StargazersCount
 				}
 			})
 			return records

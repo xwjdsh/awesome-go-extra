@@ -20,5 +20,5 @@ require (
 	github.com/sourcegraph/syntaxhighlight v0.0.0-20170531221838-bd320f5d308e // indirect
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
 	gorm.io/driver/sqlite v1.1.4
-	gorm.io/gorm v1.21.10
+	gorm.io/gorm v1.21.12
 )

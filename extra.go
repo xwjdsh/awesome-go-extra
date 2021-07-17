@@ -178,9 +178,10 @@ func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, c
 		IsGitHubRepo: isGitHubRepo,
 	}
 	if isGitHubRepo {
-		if err := h.githubAPI.UnmarshalGitHubRepo(ctx, fullName, record); err != nil {
+		if err := h.githubAPI.UnmarshalGitHubRepo(ctx, fullName, &record.Repo); err != nil {
 			return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
 		}
+		record.URL = record.Repo.HTMLURL
 	}
 	category.Records = append(category.Records, record)
 	return nil
