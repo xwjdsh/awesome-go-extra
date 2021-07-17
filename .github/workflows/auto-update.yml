@@ -1,0 +1,37 @@
+name: 'auto update'
+on:
+  push:
+  schedule:
+    - cron: '0 21 * * *'
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup git config
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+      - name: Update submodules
+        run: |
+          git submodule update --init --remote --recursive
+      - name: Install Go
+        uses: actions/setup-go@v2
+      - name: Generate README.md
+        env:
+          EXTRA_GITHUB_USERNAME: xwjdsh 
+          EXTRA_GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          RESULT=$(go run ./cmd/extra-gen --refresh-cache)
+          echo $RESULT > README.md
+      - name: Commit & Push
+        run: |
+          CHANGES=$(git status --porcelain)
+          if [[ $CHANGES != '' ]]; then
+            DATE=$(date +"%Y-%m-%d")
+            git add .
+            git commit -m "auto update: $DATE"
+            git push
+          fi
