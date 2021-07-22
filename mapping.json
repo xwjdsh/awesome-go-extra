@@ -38,5 +38,6 @@
   "https://limetext.github.io": "https://github.com/limetext/lime",
   "http://www.docker.com/": "https://github.com/moby/moby",
   "https://github.com/prologic/bitcask": "https://git.mills.io/prologic/bitcask",
-  "https://github.com/hsluoyz/casbin": "https://github.com/casbin/casbin"
+  "https://github.com/hsluoyz/casbin": "https://github.com/casbin/casbin",
+  "https://github.com/astaxie/beego": "https://github.com/beego/beego"
 }
