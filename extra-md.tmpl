@@ -1,13 +1,20 @@
 # Awesome Go Extra
 ***All data are from [awesome-go](https://github.com/avelino/awesome-go) and [GitHub API](https://docs.github.com/en/rest/reference/repos#get-a-repository).***
+{{if eq .OrderBy "created"}}
+Records are sorted by [Star](./README.md) | ***CreatedAt*** | [PushedAt](./README-pushed.md)
+{{else if eq .OrderBy "pushed"}}
+Records are sorted by [Star](./README.md) | [CreatedAt](./README-created.md) | ***PushedAt***
+{{else}}
+Records are sorted by ***Star*** | [CreatedAt](./README-created.md) | [PushedAt](./README-pushed.md)
+{{end}}
 
-{{- range .}}
+{{- range .Categories}}
 {{headingMD .HeadingLevel}} {{.Text}}
 {{if .Desc}}*{{.Desc}}*{{end}}
 	{{if .Records}}
 |Name|Desc|Star|Fork|Issue|Created|Pushed|
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-	{{- range sort .Records}}
+	{{- range .Records}}
 		{{- $description := ifelse .IsGitHubRepo .Repo.Description .Description}}
 {{if .Repo.Archived}}**[ARCHIVED]**  {{end}}[{{ifelse .IsGitHubRepo .Repo.Name .Name}}]({{.URL}})|{{replace $description "|" " " -1}}|{{recordAttr .IsGitHubRepo .Repo.StargazersCount}}|{{recordAttr .IsGitHubRepo .Repo.ForksCount}}|{{recordAttr .IsGitHubRepo .Repo.OpenIssuesCount}}|{{recordAttr .IsGitHubRepo .Repo.CreatedAt}}|{{recordAttr .IsGitHubRepo .Repo.PushedAt}}|
 	{{- end}}
