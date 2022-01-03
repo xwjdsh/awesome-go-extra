@@ -179,7 +179,7 @@ func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, c
 	}
 	if isGitHubRepo {
 		if err := h.githubAPI.UnmarshalGitHubRepo(ctx, fullName, &record.Repo); err != nil {
-			return fmt.Errorf("addr: %s, fullName: %s, err: %w", fullName, addr, err)
+			return fmt.Errorf("addr: %s, fullName: %s, err: %w", addr, fullName, err)
 		}
 		record.URL = record.Repo.HTMLURL
 	}
