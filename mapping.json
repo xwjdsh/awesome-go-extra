@@ -40,5 +40,6 @@
   "https://github.com/prologic/bitcask": "https://git.mills.io/prologic/bitcask",
   "https://github.com/hsluoyz/casbin": "https://github.com/casbin/casbin",
   "https://github.com/astaxie/beego": "https://github.com/beego/beego",
-  "https://github.com/hashicorp/":"https://github.com/hashicorp/go-retryablehttp"
+  "https://github.com/hashicorp/":"https://github.com/hashicorp/go-retryablehttp",
+  "https://github.com/golang-samples/gopher-vector":""
 }

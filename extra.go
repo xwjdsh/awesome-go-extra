@@ -165,6 +165,9 @@ func (h *Handler) parseAndAddRecord(ctx context.Context, s *goquery.Selection, c
 			addr = newAddr
 		}
 	}
+	if addr == "" {
+		return nil
+	}
 
 	a.Remove()
 	desc := strings.TrimPrefix(s.Text(), " - ")
